@@ -90,7 +90,7 @@ function D3bot.MaintainBotRoles()
 			if #(playersByTeam[team] or {}) < desiredCount then
 				if D3bot.UseConsoleBots then
 					RunConsoleCommand("bot")
-					spawnAsTeam = team
+					--spawnAsTeam = team
 				else
 					spawnAsTeam = team
 					local bot = player.CreateNextBot(D3bot.GetUsername())
