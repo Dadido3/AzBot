@@ -78,21 +78,27 @@ function HANDLER.ThinkFunction(bot)
 	local mem = bot.D3bot_Mem
 	
 	local botPos = bot:GetPos()
-	
-	local tracedata = {start=nil,endpos=nil,mask=MASK_PLAYERSOLID,filter=nil}
-	tracedata.start = bot:GetPos()
-	tracedata.endpos = tracedata.start
-	tracedata.filter = bot
-	local traceResult = util.TraceEntity(tracedata,bot)
-	
+
+	mem.timesStuck = mem.timesStuck or 0
 	-- Workaround for bots phasing through barricades in some versions of the gamemode
-	if bot:Alive() and traceResult.StartSolid == true and traceResult.Entity and not traceResult.Entity:IsWorld() and (traceResult.Entity and traceResult.Entity:GetClass() == "prop_physics") and GAMEMODE:ShouldCollide(bot, traceResult.Entity) and traceResult.Entity:GetCollisionGroup() ~= COLLISION_GROUP_DEBRIS and traceResult.Entity:IsNailed() then
-		--bot:Kill()
-		if mem.LastValidPos then
-			bot:SetPos(mem.LastValidPos)
+	-- print('movetype' .. tostring(bot:GetMoveType()))
+	if D3bot.IsBotStuck(bot) then
+		if mem.LastValidPos and mem.timesStuck < 2 then
+			bot:SetVelocity(Vector(0,0,0))
+			bot:SetMoveType(MOVETYPE_NONE)
+			bot:SetPos(mem.OldestValidPos)
+			mem.timesStuck = mem.timesStuck + 1
+		elseif not bot:IsFrozen() then
+			bot:SetVelocity(Vector(0,0,0))
+			bot:SetMoveType(MOVETYPE_NONE)
+			bot:SetPos(mem.OldestValidPos)
+			bot:Freeze(true)
 		end
-	elseif bot:Alive() then
-		mem.LastValidPos = botPos
+	elseif bot:Alive() and bot:GetMoveType() == MOVETYPE_WALK and not bot:IsFrozen() then
+		if (botPos != mem.LastValidPos) then
+			mem.OldestValidPos = mem.LastValidPos
+			mem.LastValidPos = botPos
+		end
 	end
 	
 	if mem.nextUpdateSurroundingPlayers and mem.nextUpdateSurroundingPlayers < CurTime() or not mem.nextUpdateSurroundingPlayers then
@@ -149,7 +155,8 @@ function HANDLER.OnDoDamageFunction(bot, dmg)
 end
 
 function HANDLER.OnDeathFunction(bot)
-	--bot:Say("rip me!")
+	local mem = bot.D3bot_Mem
+	mem.timesStuck = 0
 	bot:D3bot_RerollClass(HANDLER.BotClasses) -- TODO: Situation depending reroll of the zombie class
 	HANDLER.RerollTarget(bot)
 end
@@ -162,7 +169,7 @@ local potTargetEntClasses = {"prop_*turret", "prop_arsenalcrate", "prop_manhack*
 local potEntTargets = nil
 function HANDLER.CanBeTgt(bot, target)
 	if not target or not IsValid(target) then return end
-	if IsValid(target) and target:IsPlayer() and target ~= bot and target:Team() ~= TEAM_UNDEAD and target:GetObserverMode() == OBS_MODE_NONE and not target:IsFlagSet(FL_NOTARGET) and target:Alive() then return true end
+	if IsValid(target) and target:IsPlayer() and target ~= bot and target:Team() ~= TEAM_UNDEAD and target:GetObserverMode() == OBS_MODE_NONE and target:Alive() then return true end
 	if potEntTargets and table.HasValue(potEntTargets, target) then return true end
 end
 

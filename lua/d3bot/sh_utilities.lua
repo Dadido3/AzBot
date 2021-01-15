@@ -15,6 +15,16 @@ function D3bot.GetTrajectories2DParams(g, initVel, distZ, distRad)
 	return trajectories
 end
 
+function D3bot.IsBotStuck(bot) 
+	local botPos = bot:GetPos()
+	local tracedata = {start=nil,endpos=nil,mask=MASK_PLAYERSOLID,filter=nil}
+	tracedata.start = bot:GetPos()
+	tracedata.endpos = tracedata.start
+	tracedata.filter = bot
+	local traceResult = util.TraceEntity(tracedata,bot)
+	return bot:Alive() and traceResult and traceResult.StartSolid == true and not traceResult.Entity:IsWorld() and (traceResult.Entity:IsValid() and traceResult.Entity:GetClass() == "prop_physics") and traceResult.Entity:GetCollisionGroup() ~= COLLISION_GROUP_DEBRIS and traceResult.Entity:IsNailed()
+end
+
 function D3bot.GetTrajectory2DPoints(trajectory, segments)
 	trajectory.points = {}
 	for i = 0, segments, 1 do

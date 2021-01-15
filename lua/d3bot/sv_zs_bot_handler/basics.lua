@@ -27,6 +27,7 @@ function D3bot.Basics.Walk(bot, pos, slowdown, proximity) -- 'pos' should be ins
 	
 	local origin = bot:GetPos()
 	local actions = {}
+	local botMajorStuck = D3bot.IsBotStuck(bot)
 	
 	local sideSpeed
 	
@@ -80,8 +81,11 @@ function D3bot.Basics.Walk(bot, pos, slowdown, proximity) -- 'pos' should be ins
 	if duckParam == "Always" or duckToParam == "Always" then
 		actions.Duck = true
 	end
-	
-	if bot:GetMoveType() ~= MOVETYPE_LADDER then
+
+	if botMajorStuck then
+		actions.Jump = false
+		actions.Duck = false
+	elseif bot:GetMoveType() ~= MOVETYPE_LADDER then
 		if bot:IsOnGround() then
 			-- If we should climb, jump while we're on the ground
 			if shouldClimb or jumpParam == "Always" or jumpToParam == "Always" then
@@ -130,13 +134,19 @@ function D3bot.Basics.Walk(bot, pos, slowdown, proximity) -- 'pos' should be ins
 	
 	actions.Attack = facesHindrance
 	actions.Use = actions.Use or facesHindrance
-	
-	if speed > 0 then actions.MoveForward = true end
-	if speed < 0 then actions.MoveBackward = true end
-	
-	if sideSpeed and sideSpeed > 0 then actions.MoveRight = true end
-	if sideSpeed and sideSpeed < 0 then actions.MoveLeft = true end
-	
+	if not botMajorStuck then
+		if speed > 0 then actions.MoveForward = true end
+		if speed < 0 then actions.MoveBackward = true end
+		
+		if sideSpeed and sideSpeed > 0 then actions.MoveRight = true end
+		if sideSpeed and sideSpeed < 0 then actions.MoveLeft = true end
+	else
+		actions.MoveForward = false
+		actions.MoveBackward = false
+		actions.MoveRight = false
+		actions.MoveLeft = false
+		speed = 0
+	end
 	return true, actions, speed, sideSpeed, nil, mem.Angs, minorStuck, majorStuck, facesHindrance
 end
 
@@ -146,7 +156,8 @@ function D3bot.Basics.WalkAttackAuto(bot)
 	
 	local nodeOrNil = mem.NodeOrNil
 	local nextNodeOrNil = mem.NextNodeOrNil
-	
+	local botMajorStuck = D3bot.IsBotStuck(bot)
+
 	local aimPos, origin
 	local actions = {}
 	local facesTgt = false
@@ -221,7 +232,7 @@ function D3bot.Basics.WalkAttackAuto(bot)
 		actions.Duck = true
 	end
 	
-	if bot:GetMoveType() ~= MOVETYPE_LADDER then
+	if bot:GetMoveType() ~= MOVETYPE_LADDER and not botMajorStuck then
 		if bot:IsOnGround() then
 			if jumpParam == "Always" or jumpToParam == "Always" then
 				actions.Jump = true
@@ -241,6 +252,10 @@ function D3bot.Basics.WalkAttackAuto(bot)
 		else
 			actions.Duck = true
 		end
+	elseif botMajorStuck then
+		actions.Jump = false
+		actions.Duck = false
+		actions.Use = false
 	elseif minorStuck then
 		-- Stuck on ladder
 		actions.Jump = true
@@ -258,7 +273,7 @@ function D3bot.Basics.WalkAttackAuto(bot)
 	actions.Attack = facesTgt or facesHindrance
 	actions.Use = actions.Use or facesHindrance
 	
-	actions.MoveForward = true
+	actions.MoveForward = not botMajorStuck
 	
 	return true, actions, speed, nil, nil, mem.Angs, minorStuck, majorStuck, facesHindrance
 end
