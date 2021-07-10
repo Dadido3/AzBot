@@ -11,7 +11,7 @@ D3bot.NodeBlocking = {
 	classes = {func_breakable = true, prop_physics = true, prop_dynamic = true, prop_door_rotating = true, func_door = true, func_physbox = true, func_physbox_multiplayer = true, func_movelinear = true}
 }
 
-D3bot.NodeDamageEnts = {"prop_*turret", "prop_arsenalcrate", "prop_resupply"}
+D3bot.NodeDamageEnts = {"prop_*turret", "prop_arsenalcrate", "prop_resupply", "prop_drone*", "prop_remantler"}
 
 D3bot.BotAttackDistMin = 100
 D3bot.LinkDeathCostRaise = 300
